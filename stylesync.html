@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StyleSync — 날씨에 맞는 나만의 코디</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky-light: #e0f2fe;
+    --sky-mid: #7dd3fc;
+    --sky-deep: #0ea5e9;
+    --sky-dark: #0369a1;
+    --cloud: #f0f9ff;
+    --warm: #fff7ed;
+    --sand: #fde68a;
+    --text-main: #0f172a;
+    --text-sub: #475569;
+    --text-muted: #94a3b8;
+    --white: #ffffff;
+    --card-bg: rgba(255,255,255,0.88);
+    --radius-lg: 20px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(14,165,233,0.10);
+    --shadow-lg: 0 8px 40px rgba(14,165,233,0.18);
+    --transition: 0.28s cubic-bezier(.4,0,.2,1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR','DM Sans',sans-serif; background: var(--cloud); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+  /* NAV */
+  nav { position: fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:0 5vw; height:64px; background:rgba(255,255,255,0.75); backdrop-filter:blur(18px); border-bottom:1px solid rgba(125,211,252,0.2); }
+  .nav-logo { font-family:'DM Sans',sans-serif; font-weight:700; font-size:1.3rem; color:var(--sky-dark); letter-spacing:-0.5px; }
+  .nav-logo span { color:var(--sky-deep); }
+  .nav-links { display:flex; gap:8px; align-items:center; }
+  .btn-ghost { background:none; border:none; cursor:pointer; font-size:0.9rem; font-weight:500; color:var(--text-sub); padding:8px 16px; border-radius:var(--radius-sm); transition:color var(--transition),background var(--transition); font-family:inherit; }
+  .btn-ghost:hover { color:var(--sky-dark); background:var(--sky-light); }
+  .btn-primary { background:var(--sky-deep); color:var(--white); border:none; cursor:pointer; font-size:0.9rem; font-weight:600; padding:8px 20px; border-radius:50px; transition:background var(--transition),transform var(--transition),box-shadow var(--transition); font-family:inherit; }
+  .btn-primary:hover { background:var(--sky-dark); transform:translateY(-1px); box-shadow:0 4px 16px rgba(14,165,233,0.3); }
+
+  /* HERO */
+  #hero { min-height:100vh; background:linear-gradient(160deg,#bae6fd 0%,#e0f2fe 40%,#f0f9ff 70%,#fff7ed 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 5vw 60px; position:relative; overflow:hidden; }
+  .hero-bg-orb { position:absolute; border-radius:50%; pointer-events:none; animation:float 8s ease-in-out infinite; }
+  .orb1 { width:420px; height:420px; background:radial-gradient(circle,rgba(125,211,252,0.35) 0%,transparent 70%); top:-100px; right:-80px; }
+  .orb2 { width:280px; height:280px; background:radial-gradient(circle,rgba(253,230,138,0.4) 0%,transparent 70%); bottom:40px; left:-40px; animation-delay:3s; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-24px)} }
+  .hero-content { max-width:700px; text-align:center; position:relative; z-index:1; }
+  .hero-eyebrow { display:inline-block; background:rgba(14,165,233,0.12); color:var(--sky-dark); font-size:0.82rem; font-weight:600; padding:5px 14px; border-radius:50px; margin-bottom:20px; letter-spacing:0.4px; }
+  .hero-title { font-size:clamp(2.2rem,5vw,3.4rem); font-weight:700; line-height:1.18; color:var(--text-main); letter-spacing:-1px; margin-bottom:18px; }
+  .hero-title .accent { color:var(--sky-deep); }
+  .hero-sub { font-size:1.05rem; color:var(--text-sub); line-height:1.7; margin-bottom:38px; font-weight:300; }
+  .hero-cta-row { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-hero { background:var(--sky-deep); color:var(--white); border:none; cursor:pointer; font-size:1rem; font-weight:600; padding:14px 32px; border-radius:50px; transition:all var(--transition); font-family:inherit; box-shadow:0 4px 20px rgba(14,165,233,0.3); }
+  .btn-hero:hover { background:var(--sky-dark); transform:translateY(-2px); box-shadow:0 8px 28px rgba(14,165,233,0.35); }
+  .btn-hero-outline { background:transparent; color:var(--sky-dark); border:2px solid var(--sky-mid); cursor:pointer; font-size:1rem; font-weight:600; padding:12px 28px; border-radius:50px; transition:all var(--transition); font-family:inherit; }
+  .btn-hero-outline:hover { background:var(--sky-light); }
+
+  /* WEATHER */
+  #weather-section { padding:80px 5vw; background:var(--white); }
+  .section-label { font-size:0.78rem; font-weight:700; letter-spacing:1.8px; color:var(--sky-deep); text-transform:uppercase; margin-bottom:10px; }
+  .section-title { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; letter-spacing:-0.5px; margin-bottom:10px; }
+  .section-sub { color:var(--text-sub); font-size:0.97rem; font-weight:300; margin-bottom:40px; }
+  .weather-card { background:linear-gradient(135deg,#0ea5e9 0%,#38bdf8 50%,#7dd3fc 100%); border-radius:var(--radius-lg); padding:32px; color:white; max-width:480px; box-shadow:var(--shadow-lg); position:relative; overflow:hidden; margin-bottom:32px; }
+  .weather-card::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.1); }
+  .weather-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
+  .weather-loc { font-size:0.9rem; opacity:0.85; margin-bottom:4px; }
+  .weather-date { font-size:0.78rem; opacity:0.65; }
+  .weather-icon { font-size:3.2rem; line-height:1; }
+  .weather-temp { font-size:3.8rem; font-weight:700; letter-spacing:-2px; line-height:1; margin-bottom:6px; }
+  .weather-desc { font-size:1rem; opacity:0.9; margin-bottom:20px; }
+  .weather-meta { display:flex; gap:24px; }
+  .weather-meta-item { font-size:0.82rem; opacity:0.8; }
+  .weather-meta-item strong { display:block; font-size:1rem; font-weight:600; opacity:1; }
+  .weather-status { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.15); border-radius:50px; padding:6px 14px; font-size:0.78rem; margin-top:16px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:#86efac; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* APP */
+  #app-section { padding:80px 5vw; background:linear-gradient(180deg,#f0f9ff 0%,#e0f2fe 100%); }
+  .app-layout { display:grid; grid-template-columns:1fr 1.1fr; gap:28px; max-width:1060px; }
+  @media(max-width:768px){ .app-layout{ grid-template-columns:1fr; } }
+
+  .card { background:var(--card-bg); backdrop-filter:blur(12px); border-radius:var(--radius-lg); padding:28px; border:1px solid rgba(125,211,252,0.2); box-shadow:var(--shadow); }
+  .card-title { font-size:1.05rem; font-weight:700; margin-bottom:18px; color:var(--text-main); }
+  .input-group { margin-bottom:14px; }
+  .input-label { font-size:0.8rem; font-weight:600; color:var(--text-sub); margin-bottom:6px; display:block; }
+  .input-field { width:100%; padding:10px 14px; border:1.5px solid rgba(125,211,252,0.4); border-radius:var(--radius-sm); font-size:0.9rem; background:rgba(255,255,255,0.8); color:var(--text-main); transition:border-color var(--transition),box-shadow var(--transition); font-family:inherit; outline:none; }
+  .input-field:focus { border-color:var(--sky-deep); box-shadow:0 0 0 3px rgba(14,165,233,0.1); }
+  .input-select { width:100%; padding:10px 14px; border:1.5px solid rgba(125,211,252,0.4); border-radius:var(--radius-sm); font-size:0.9rem; background:rgba(255,255,255,0.9); color:var(--text-main); font-family:inherit; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; transition:border-color var(--transition); }
+  .input-select:focus { border-color:var(--sky-deep); box-shadow:0 0 0 3px rgba(14,165,233,0.1); }
+  .tag-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .tag { background:var(--sky-light); color:var(--sky-dark); border:1.5px solid rgba(14,165,233,0.2); border-radius:50px; padding:5px 14px; font-size:0.8rem; cursor:pointer; transition:all var(--transition); user-select:none; }
+  .tag:hover,.tag.active { background:var(--sky-deep); color:white; border-color:var(--sky-deep); }
+  .btn-generate { width:100%; background:linear-gradient(135deg,var(--sky-deep),var(--sky-dark)); color:white; border:none; cursor:pointer; padding:14px; border-radius:var(--radius-md); font-size:1rem; font-weight:700; margin-top:16px; transition:all var(--transition); font-family:inherit; box-shadow:0 4px 16px rgba(14,165,233,0.25); }
+  .btn-generate:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(14,165,233,0.35); }
+  .btn-generate:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+  /* RESULT CARD */
+  .result-card { background:var(--card-bg); backdrop-filter:blur(12px); border-radius:var(--radius-lg); padding:0; border:1.5px solid rgba(125,211,252,0.3); box-shadow:var(--shadow-lg); min-height:420px; display:flex; flex-direction:column; overflow:hidden; }
+
+  .result-placeholder { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); text-align:center; padding:40px; }
+  .result-placeholder .big-icon { font-size:3.5rem; margin-bottom:12px; opacity:0.5; }
+  .result-placeholder p { font-size:0.88rem; line-height:1.6; }
+
+  /* SPINNER */
+  .spinner { display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; flex:1; padding:60px 20px; }
+  .spinner.show { display:flex; }
+  .spin-ring { width:44px; height:44px; border:3px solid var(--sky-light); border-top-color:var(--sky-deep); border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spinner-steps { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .spinner-step { font-size:0.82rem; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+  .spinner-step.active { color:var(--sky-deep); font-weight:600; }
+  .spinner-step.done { color:#22c55e; }
+  .step-dot { width:8px; height:8px; border-radius:50%; background:var(--text-muted); flex-shrink:0; }
+  .spinner-step.active .step-dot { background:var(--sky-deep); animation:pulse 1s infinite; }
+  .spinner-step.done .step-dot { background:#22c55e; }
+
+  /* OUTFIT RESULT */
+  .outfit-result { display:none; flex-direction:column; }
+  .outfit-result.show { display:flex; }
+
+  .outfit-image-wrap { position:relative; width:100%; aspect-ratio:3/4; overflow:hidden; background:linear-gradient(135deg,#e0f2fe,#bae6fd); }
+  .outfit-image-wrap img { width:100%; height:100%; object-fit:cover; display:block; transition:opacity 0.4s; }
+  .outfit-image-wrap .img-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(15,23,42,0.65) 0%, transparent 50%); }
+  .outfit-image-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#e0f2fe,#bae6fd); }
+
+  .outfit-info { padding:22px 24px 24px; }
+  .outfit-tag-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .outfit-tag { background:var(--sky-light); color:var(--sky-dark); border-radius:50px; padding:4px 12px; font-size:0.75rem; font-weight:600; }
+  .outfit-name { font-size:1.12rem; font-weight:700; margin-bottom:8px; }
+  .outfit-desc { font-size:0.86rem; color:var(--text-sub); line-height:1.65; margin-bottom:16px; }
+  .outfit-items-title { font-size:0.75rem; font-weight:700; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+  .outfit-item-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(125,211,252,0.15); font-size:0.85rem; }
+  .outfit-item-row:last-child { border-bottom:none; }
+  .item-icon { font-size:1.1rem; width:26px; text-align:center; }
+  .item-name { font-weight:500; flex:1; }
+  .item-detail { color:var(--text-muted); font-size:0.76rem; text-align:right; }
+
+  /* FEATURES */
+  #features { padding:80px 5vw; background:var(--white); }
+  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:960px; }
+  @media(max-width:680px){ .features-grid{ grid-template-columns:1fr; } }
+  .feature-card { padding:28px; border-radius:var(--radius-lg); background:var(--cloud); border:1px solid rgba(125,211,252,0.2); transition:transform var(--transition),box-shadow var(--transition); }
+  .feature-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+  .feature-icon { font-size:2rem; margin-bottom:14px; }
+  .feature-title { font-size:1rem; font-weight:700; margin-bottom:8px; }
+  .feature-desc { font-size:0.85rem; color:var(--text-sub); line-height:1.65; }
+
+  /* FOOTER */
+  footer { padding:40px 5vw; text-align:center; background:var(--text-main); color:rgba(255,255,255,0.5); font-size:0.82rem; }
+  footer .footer-logo { color:var(--sky-mid); font-weight:700; font-size:1rem; margin-bottom:8px; }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(15,23,42,0.5); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity var(--transition); }
+  .modal-overlay.open { opacity:1; pointer-events:all; }
+  .modal { background:white; border-radius:var(--radius-lg); width:100%; max-width:480px; padding:36px; box-shadow:0 20px 60px rgba(14,165,233,0.2); transform:translateY(20px); transition:transform var(--transition); max-height:90vh; overflow-y:auto; }
+  .modal-overlay.open .modal { transform:translateY(0); }
+  .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+  .modal-title { font-size:1.3rem; font-weight:700; }
+  .modal-close { width:32px; height:32px; border-radius:50%; border:none; background:var(--sky-light); color:var(--sky-dark); cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; transition:background var(--transition); }
+  .modal-close:hover { background:var(--sky-mid); }
+  .form-group { margin-bottom:16px; }
+  .form-label { font-size:0.82rem; font-weight:600; color:var(--text-sub); margin-bottom:6px; display:block; }
+  .form-input { width:100%; padding:11px 14px; border:1.5px solid #e2e8f0; border-radius:var(--radius-sm); font-size:0.92rem; font-family:inherit; outline:none; color:var(--text-main); transition:border-color var(--transition),box-shadow var(--transition); }
+  .form-input:focus { border-color:var(--sky-deep); box-shadow:0 0 0 3px rgba(14,165,233,0.1); }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-select { width:100%; padding:11px 14px; border:1.5px solid #e2e8f0; border-radius:var(--radius-sm); font-size:0.92rem; font-family:inherit; outline:none; color:var(--text-main); background:white; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; transition:border-color var(--transition); }
+  .form-select:focus { border-color:var(--sky-deep); }
+  .section-divider { font-size:0.75rem; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--sky-deep); margin:22px 0 14px; padding-bottom:8px; border-bottom:1.5px solid var(--sky-light); }
+  .btn-submit { width:100%; background:linear-gradient(135deg,var(--sky-deep),var(--sky-dark)); color:white; border:none; cursor:pointer; padding:13px; border-radius:var(--radius-md); font-size:1rem; font-weight:700; margin-top:6px; transition:all var(--transition); font-family:inherit; }
+  .btn-submit:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(14,165,233,0.3); }
+  .modal-switch { text-align:center; margin-top:16px; font-size:0.85rem; color:var(--text-muted); }
+  .modal-switch a { color:var(--sky-deep); font-weight:600; cursor:pointer; text-decoration:none; }
+  .modal-switch a:hover { text-decoration:underline; }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--text-main); color:white; padding:12px 24px; border-radius:50px; font-size:0.88rem; box-shadow:0 8px 24px rgba(0,0,0,0.2); z-index:300; transition:transform 0.4s cubic-bezier(.4,0,.2,1); white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  .user-badge { display:none; align-items:center; gap:8px; background:var(--sky-light); border-radius:50px; padding:6px 14px; font-size:0.82rem; font-weight:600; color:var(--sky-dark); }
+  .user-badge.show { display:flex; }
+  .avatar { width:26px; height:26px; border-radius:50%; background:var(--sky-deep); color:white; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; }
+
+  .img-regen-btn { position:absolute; top:10px; right:10px; background:rgba(255,255,255,0.85); backdrop-filter:blur(6px); border:none; border-radius:50px; padding:6px 12px; font-size:0.75rem; font-weight:600; color:var(--sky-dark); cursor:pointer; display:flex; align-items:center; gap:4px; z-index:2; transition:all var(--transition); }
+  .img-regen-btn:hover { background:white; transform:scale(1.05); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Style<span>Sync</span></div>
+  <div class="nav-links">
+    <div class="user-badge" id="userBadge">
+      <div class="avatar" id="avatarInitial">?</div>
+      <span id="userNameDisplay">사용자</span>
+    </div>
+    <button class="btn-ghost" id="loginBtn" onclick="openModal('login')">로그인</button>
+    <button class="btn-primary" id="signupNavBtn" onclick="openModal('signup')">회원가입</button>
+    <button class="btn-ghost" id="logoutBtn" style="display:none" onclick="logout()">로그아웃</button>
+  </div>
+</nav>
+
+<section id="hero">
+  <div class="hero-bg-orb orb1"></div>
+  <div class="hero-bg-orb orb2"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">☁️ 날씨 기반 AI 패션 어시스턴트</div>
+    <h1 class="hero-title">오늘 날씨에 딱 맞는<br><span class="accent">나만의 코디</span>를 추천해드려요</h1>
+    <p class="hero-sub">현재 위치의 날씨를 자동으로 파악하고,<br>당신의 체형과 오늘의 일정에 맞는 스타일을 AI가 제안합니다</p>
+    <div class="hero-cta-row">
+      <button class="btn-hero" onclick="scrollToApp()">코디 추천 받기</button>
+      <button class="btn-hero-outline" onclick="openModal('signup')">무료 시작하기</button>
+    </div>
+  </div>
+</section>
+
+<section id="weather-section">
+  <div class="section-label">실시간 날씨</div>
+  <div class="section-title">지금 내 위치 날씨</div>
+  <p class="section-sub">위치 정보를 이용해 현재 날씨를 자동으로 불러옵니다</p>
+  <div class="weather-card" id="weatherCard">
+    <div class="weather-top">
+      <div>
+        <div class="weather-loc" id="wLoc">📍 위치 확인 중...</div>
+        <div class="weather-date" id="wDate">—</div>
+      </div>
+      <div class="weather-icon" id="wIcon">⏳</div>
+    </div>
+    <div class="weather-temp" id="wTemp">--°</div>
+    <div class="weather-desc" id="wDesc">날씨 정보를 불러오는 중입니다</div>
+    <div class="weather-meta">
+      <div class="weather-meta-item">체감온도<strong id="wFeels">--°</strong></div>
+      <div class="weather-meta-item">습도<strong id="wHumid">--%</strong></div>
+      <div class="weather-meta-item">바람<strong id="wWind">-- m/s</strong></div>
+    </div>
+    <div class="weather-status"><span class="dot"></span> 실시간 업데이트 중</div>
+  </div>
+</section>
+
+<section id="app-section">
+  <div class="section-label">AI 코디 추천</div>
+  <div class="section-title">오늘 뭐 입을까요?</div>
+  <p class="section-sub">일정과 선호 스타일을 입력하면 AI가 실제 코디 이미지를 생성해드립니다</p>
+
+  <div class="app-layout">
+    <!-- INPUT CARD -->
+    <div class="card">
+      <div class="card-title">✏️ 오늘의 정보 입력</div>
+
+      <div class="input-group">
+        <label class="input-label">성별 (이미지 생성에 반영됩니다)</label>
+        <select class="input-select" id="genderSelect">
+          <option value="">선택하세요</option>
+          <option value="여성">여성</option>
+          <option value="남성">남성</option>
+          <option value="유니섹스">유니섹스</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">오늘 어디 가시나요?</label>
+        <input class="input-field" id="placeInput" placeholder="예: 강남 카페, 회사, 친구 생일파티..." />
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">선호 스타일</label>
+        <div class="tag-row" id="styleTags">
+          <div class="tag" onclick="toggleTag(this)">캐주얼</div>
+          <div class="tag" onclick="toggleTag(this)">오피스룩</div>
+          <div class="tag" onclick="toggleTag(this)">스트릿</div>
+          <div class="tag" onclick="toggleTag(this)">미니멀</div>
+          <div class="tag" onclick="toggleTag(this)">스포티</div>
+          <div class="tag" onclick="toggleTag(this)">페미닌</div>
+          <div class="tag" onclick="toggleTag(this)">클래식</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">색상 선호</label>
+        <div class="tag-row" id="colorTags">
+          <div class="tag" onclick="toggleTag(this)">무채색</div>
+          <div class="tag" onclick="toggleTag(this)">파스텔</div>
+          <div class="tag" onclick="toggleTag(this)">비비드</div>
+          <div class="tag" onclick="toggleTag(this)">어스톤</div>
+          <div class="tag" onclick="toggleTag(this)">다크톤</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">추가 요청 사항 (선택)</label>
+        <input class="input-field" id="extraInput" placeholder="예: 편한 신발 위주로, 레이어드 스타일..." />
+      </div>
+
+      <button class="btn-generate" id="generateBtn" onclick="generateOutfit()">✨ AI 코디 이미지 생성하기</button>
+    </div>
+
+    <!-- RESULT CARD -->
+    <div class="result-card" id="resultCard">
+      <div class="result-placeholder" id="resultPlaceholder">
+        <div class="big-icon">🖼️</div>
+        <p>왼쪽에서 정보를 입력하면<br>AI가 실제 코디 이미지를 생성해드립니다</p>
+      </div>
+
+      <div class="spinner" id="spinner">
+        <div class="spin-ring"></div>
+        <div class="spinner-steps">
+          <div class="spinner-step" id="step1"><span class="step-dot"></span> Claude AI 코디 분석 중...</div>
+          <div class="spinner-step" id="step2"><span class="step-dot"></span> 스타일 프롬프트 생성 중...</div>
+          <div class="spinner-step" id="step3"><span class="step-dot"></span> 코디 이미지 생성 중...</div>
+        </div>
+      </div>
+
+      <div class="outfit-result" id="outfitResult">
+        <div class="outfit-image-wrap" id="outfitImageWrap">
+          <img id="outfitImage" src="" alt="코디 이미지" style="opacity:0" onload="this.style.opacity='1'" onerror="handleImageError(this)" />
+          <div class="img-overlay"></div>
+          <button class="img-regen-btn" onclick="regenImage()">🔄 이미지 재생성</button>
+          <div class="outfit-image-loading" id="imageLoading">
+            <div class="spin-ring"></div>
+          </div>
+        </div>
+        <div class="outfit-info">
+          <div class="outfit-tag-row" id="outfitTags"></div>
+          <div class="outfit-name" id="outfitName"></div>
+          <div class="outfit-desc" id="outfitDesc"></div>
+          <div class="outfit-items">
+            <div class="outfit-items-title">아이템 구성</div>
+            <div id="outfitItemsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="section-label">주요 기능</div>
+  <div class="section-title">StyleSync가 특별한 이유</div>
+  <p class="section-sub">날씨부터 체형까지, 당신만을 위한 스타일 추천</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🌤️</div>
+      <div class="feature-title">실시간 날씨 연동</div>
+      <div class="feature-desc">현재 위치의 온도, 습도, 날씨를 자동 파악해 계절과 날씨에 딱 맞는 코디를 추천합니다</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">AI 코디 이미지 생성</div>
+      <div class="feature-desc">Claude AI가 코디를 구성하고, 이미지 AI가 실제 착장 이미지를 즉시 생성해드립니다</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📏</div>
+      <div class="feature-title">체형 맞춤 추천</div>
+      <div class="feature-desc">키, 몸무게, 체형, 성별 정보를 기반으로 실루엣이 예쁘게 나오는 스타일을 제안합니다</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">StyleSync</div>
+  <p>© 2025 StyleSync. 날씨에 맞는 나만의 패션을 찾아드립니다.</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">로그인</div>
+      <button class="modal-close" onclick="closeModal('login')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input type="email" class="form-input" id="loginEmail" placeholder="이메일 주소" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호</label>
+      <input type="password" class="form-input" id="loginPw" placeholder="비밀번호" />
+    </div>
+    <button class="btn-submit" onclick="doLogin()">로그인</button>
+    <div class="modal-switch">계정이 없으신가요? <a onclick="switchModal('login','signup')">회원가입</a></div>
+  </div>
+</div>
+
+<!-- SIGNUP MODAL -->
+<div class="modal-overlay" id="signupModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">회원가입</div>
+      <button class="modal-close" onclick="closeModal('signup')">✕</button>
+    </div>
+    <div class="section-divider">기본 정보</div>
+    <div class="form-group">
+      <label class="form-label">이름</label>
+      <input type="text" class="form-input" id="suName" placeholder="이름" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input type="email" class="form-input" id="suEmail" placeholder="이메일 주소" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호</label>
+      <input type="password" class="form-input" id="suPw" placeholder="8자 이상" />
+    </div>
+    <div class="section-divider">신체 정보 (코디 최적화에 사용)</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">키 (cm)</label>
+        <input type="number" class="form-input" id="suHeight" placeholder="예: 170" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">몸무게 (kg)</label>
+        <input type="number" class="form-input" id="suWeight" placeholder="예: 60" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">성별</label>
+        <select class="form-select" id="suGender">
+          <option value="">선택</option>
+          <option value="여성">여성</option>
+          <option value="남성">남성</option>
+          <option value="유니섹스">유니섹스</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">체형</label>
+        <select class="form-select" id="suBody">
+          <option value="">선택</option>
+          <option value="슬림">슬림</option>
+          <option value="보통">보통</option>
+          <option value="근육질">근육질</option>
+          <option value="통통">통통</option>
+          <option value="볼륨">볼륨</option>
+        </select>
+      </div>
+    </div>
+    <div class="section-divider">스타일 선호 (선택)</div>
+    <div class="form-group">
+      <label class="form-label">평소 즐겨 입는 스타일</label>
+      <select class="form-select" id="suStyle">
+        <option value="">선택 안 함</option>
+        <option value="캐주얼">캐주얼</option>
+        <option value="오피스룩">오피스룩</option>
+        <option value="스트릿">스트릿</option>
+        <option value="미니멀">미니멀</option>
+        <option value="스포티">스포티</option>
+        <option value="클래식">클래식</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">피하고 싶은 색상/스타일 (선택)</label>
+      <input type="text" class="form-input" id="suAvoid" placeholder="예: 핑크, 너무 타이트한 옷..." />
+    </div>
+    <button class="btn-submit" onclick="doSignup()">가입하기</button>
+    <div class="modal-switch">이미 계정이 있으신가요? <a onclick="switchModal('signup','login')">로그인</a></div>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+let weatherData = null;
+let lastOutfitData = null;
+let lastImagePrompt = null;
+
+// ── WEATHER ──
+function initWeather() {
+  const now = new Date();
+  document.getElementById('wDate').textContent = now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  if (!navigator.geolocation) { setWeatherManual(); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+    () => setWeatherManual()
+  );
+}
+
+async function fetchWeather(lat, lon) {
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`);
+    const data = await res.json();
+    const c = data.current;
+    const tz = data.timezone || 'Asia/Seoul';
+    weatherData = { temp:Math.round(c.temperature_2m), feels:Math.round(c.apparent_temperature), humid:c.relative_humidity_2m, wind:(c.wind_speed_10m/3.6).toFixed(1), code:c.weather_code, city:tz.split('/')[1]?.replace(/_/g,' ')||'현재 위치' };
+    renderWeather();
+  } catch(e) { setWeatherManual(); }
+}
+
+function wmoToInfo(code) {
+  if (code===0) return {icon:'☀️',desc:'맑음'};
+  if (code<=2) return {icon:'⛅',desc:'구름 조금'};
+  if (code===3) return {icon:'☁️',desc:'흐림'};
+  if (code<=49) return {icon:'🌫️',desc:'안개'};
+  if (code<=59) return {icon:'🌦️',desc:'이슬비'};
+  if (code<=69) return {icon:'🌧️',desc:'비'};
+  if (code<=79) return {icon:'🌨️',desc:'눈'};
+  if (code<=84) return {icon:'🌧️',desc:'소나기'};
+  if (code<=99) return {icon:'⛈️',desc:'천둥번개'};
+  return {icon:'🌡️',desc:'날씨 정보'};
+}
+
+function renderWeather() {
+  if (!weatherData) return;
+  const {icon,desc} = wmoToInfo(weatherData.code);
+  document.getElementById('wIcon').textContent = icon;
+  document.getElementById('wTemp').textContent = `${weatherData.temp}°`;
+  document.getElementById('wDesc').textContent = desc;
+  document.getElementById('wFeels').textContent = `${weatherData.feels}°`;
+  document.getElementById('wHumid').textContent = `${weatherData.humid}%`;
+  document.getElementById('wWind').textContent = `${weatherData.wind} m/s`;
+  document.getElementById('wLoc').textContent = `📍 ${weatherData.city}`;
+}
+
+function setWeatherManual() {
+  weatherData = {temp:22,feels:21,humid:60,wind:'2.1',code:1,city:'서울'};
+  renderWeather();
+}
+
+// ── TAGS ──
+function toggleTag(el) { el.classList.toggle('active'); }
+function getActiveTags(id) { return [...document.querySelectorAll(`#${id} .tag.active`)].map(t=>t.textContent); }
+
+// ── SPINNER STEPS ──
+function setStep(n) {
+  ['step1','step2','step3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.className = 'spinner-step' + (i<n?' done':i===n?' active':'');
+  });
+}
+
+// ── MAIN GENERATION ──
+async function generateOutfit() {
+  const place = document.getElementById('placeInput').value || '일상';
+  const styles = getActiveTags('styleTags');
+  const colors = getActiveTags('colorTags');
+  const extra = document.getElementById('extraInput').value;
+  const genderInput = document.getElementById('genderSelect').value;
+
+  const temp = weatherData?.temp ?? 20;
+  const weatherDesc = weatherData ? wmoToInfo(weatherData.code).desc : '맑음';
+  const humid = weatherData?.humid ?? 50;
+
+  // Gender: prefer form input, fallback to profile
+  const gender = genderInput || currentUser?.gender || '유니섹스';
+
+  const userInfo = currentUser
+    ? `키 ${currentUser.height||'미입력'}cm, 몸무게 ${currentUser.weight||'미입력'}kg, 체형 ${currentUser.body||'보통'}, 성별 ${gender}`
+    : `성별: ${gender}`;
+
+  // Show spinner
+  document.getElementById('resultPlaceholder').style.display = 'none';
+  document.getElementById('outfitResult').classList.remove('show');
+  document.getElementById('spinner').classList.add('show');
+  document.getElementById('generateBtn').disabled = true;
+  setStep(0);
+
+  try {
+    // STEP 1: Claude generates outfit + image prompt
+    setStep(0);
+    const claudePrompt = `당신은 전문 패션 스타일리스트입니다.
+
+현재 날씨: ${weatherDesc}, 기온 ${temp}°C, 습도 ${humid}%
+장소/일정: ${place}
+선호 스타일: ${styles.length?styles.join(', '):'자유'}
+선호 색상: ${colors.length?colors.join(', '):'자유'}
+추가 요청: ${extra||'없음'}
+사용자 정보: ${userInfo}
+
+다음 JSON 형식으로만 응답하세요 (백틱 없이):
+{
+  "name": "코디 이름 (예: 봄날의 미니멀 오피스룩)",
+  "tags": ["태그1","태그2","태그3"],
+  "desc": "이 코디 추천 이유와 스타일링 팁 (2~3문장)",
+  "items": [
+    {"icon":"이모지","name":"아이템명","detail":"색상/소재 설명"},
+    {"icon":"이모지","name":"아이템명","detail":"색상/소재 설명"},
+    {"icon":"이모지","name":"아이템명","detail":"색상/소재 설명"},
+    {"icon":"이모지","name":"아이템명","detail":"색상/소재 설명"},
+    {"icon":"이모지","name":"아이템명","detail":"색상/소재 설명"}
+  ],
+  "imagePrompt": "English image generation prompt: a full-body fashion photo of a ${gender==='여성'?'young Korean woman':gender==='남성'?'young Korean man':'young person'} wearing [describe the complete outfit with specific colors, fabrics, and styling details from above items]. Clean white studio background, professional fashion photography, high quality, detailed clothing"
+}`;
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1200,messages:[{role:"user",content:claudePrompt}]})
+    });
+    const data = await res.json();
+    const text = data.content.map(i=>i.text||"").join("");
+    const clean = text.replace(/```json|```/g,"").trim();
+    const outfit = JSON.parse(clean);
+    lastOutfitData = outfit;
+
+    setStep(1);
+    // STEP 2: Build image prompt
+    const genderWord = gender==='여성'?'young Korean woman':gender==='남성'?'young Korean man':'young Korean person';
+    const imagePrompt = outfit.imagePrompt || `full body fashion photo of ${genderWord} wearing stylish ${styles.join(' ')} outfit, ${colors.join(' ')} colors, white studio background, professional fashion photography`;
+    lastImagePrompt = imagePrompt;
+
+    setStep(2);
+    // STEP 3: Show result UI and load image
+    renderOutfitInfo(outfit);
+    loadOutfitImage(imagePrompt);
+
+  } catch(e) {
+    console.error(e);
+    showToast('코디 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+    document.getElementById('spinner').classList.remove('show');
+    document.getElementById('resultPlaceholder').style.display = 'flex';
+  } finally {
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+function renderOutfitInfo(outfit) {
+  document.getElementById('spinner').classList.remove('show');
+
+  document.getElementById('outfitTags').innerHTML = outfit.tags.map(t=>`<span class="outfit-tag">${t}</span>`).join('');
+  document.getElementById('outfitName').textContent = outfit.name;
+  document.getElementById('outfitDesc').textContent = outfit.desc;
+  document.getElementById('outfitItemsList').innerHTML = outfit.items.map(item=>`
+    <div class="outfit-item-row">
+      <span class="item-icon">${item.icon}</span>
+      <span class="item-name">${item.name}</span>
+      <span class="item-detail">${item.detail}</span>
+    </div>`).join('');
+
+  // Show result section, image loading
+  document.getElementById('outfitImage').style.opacity = '0';
+  document.getElementById('imageLoading').style.display = 'flex';
+  document.getElementById('outfitResult').classList.add('show');
+}
+
+function loadOutfitImage(prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const seed = Math.floor(Math.random()*99999);
+  // Pollinations.ai - free image generation, no API key needed
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=600&height=800&seed=${seed}&nologo=true&enhance=true`;
+  const img = document.getElementById('outfitImage');
+  img.src = url;
+  img.onload = () => {
+    document.getElementById('imageLoading').style.display = 'none';
+    img.style.opacity = '1';
+  };
+  img.onerror = () => handleImageError(img);
+}
+
+function handleImageError(img) {
+  document.getElementById('imageLoading').style.display = 'none';
+  // Fallback: try once more with simpler prompt
+  if (!img.dataset.retried && lastOutfitData) {
+    img.dataset.retried = '1';
+    const gender = document.getElementById('genderSelect').value || currentUser?.gender || '유니섹스';
+    const genderWord = gender==='여성'?'woman':gender==='남성'?'man':'person';
+    const items = lastOutfitData.items.map(i=>i.name).join(', ');
+    const fallback = `fashion outfit flat lay photography, ${items}, clean white background, professional product shot`;
+    loadOutfitImage(fallback);
+    return;
+  }
+  // Final fallback: gradient placeholder
+  document.getElementById('outfitImageWrap').style.background = 'linear-gradient(135deg,#bae6fd 0%,#7dd3fc 50%,#38bdf8 100%)';
+  img.style.display = 'none';
+  const wrap = document.getElementById('outfitImageWrap');
+  const fb = document.createElement('div');
+  fb.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;gap:10px;';
+  fb.innerHTML = '<div style="font-size:3rem">👗</div><div style="font-size:0.85rem;opacity:0.85">이미지 로딩 실패<br>재생성 버튼을 눌러주세요</div>';
+  wrap.appendChild(fb);
+}
+
+function regenImage() {
+  if (!lastImagePrompt) return;
+  document.getElementById('outfitImage').style.opacity = '0';
+  document.getElementById('outfitImage').style.display = '';
+  document.getElementById('imageLoading').style.display = 'flex';
+  // Remove fallback div if any
+  const wrap = document.getElementById('outfitImageWrap');
+  wrap.querySelectorAll('div:not(.img-overlay):not(.outfit-image-loading):not(.img-regen-btn)').forEach(d=>{if(d.style.position==='absolute') d.remove();});
+  wrap.style.background = '';
+  document.getElementById('outfitImage').removeAttribute('data-retried');
+  loadOutfitImage(lastImagePrompt);
+}
+
+// ── AUTH ──
+function openModal(type) { document.getElementById(`${type}Modal`).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal(type) { document.getElementById(`${type}Modal`).classList.remove('open'); document.body.style.overflow=''; }
+function switchModal(from,to) { closeModal(from); setTimeout(()=>openModal(to),200); }
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  if (!email||!pw) { showToast('이메일과 비밀번호를 입력해주세요'); return; }
+  const users = JSON.parse(localStorage.getItem('ss_users')||'{}');
+  const user = users[email];
+  if (!user||user.pw!==pw) { showToast('이메일 또는 비밀번호가 올바르지 않습니다'); return; }
+  currentUser = user;
+  localStorage.setItem('ss_current',email);
+  updateNavForUser(user);
+  // Autofill gender select
+  if (user.gender) document.getElementById('genderSelect').value = user.gender;
+  closeModal('login');
+  showToast(`환영합니다, ${user.name}님! 👋`);
+}
+
+function doSignup() {
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim();
+  const pw = document.getElementById('suPw').value;
+  const height = document.getElementById('suHeight').value;
+  const weight = document.getElementById('suWeight').value;
+  const gender = document.getElementById('suGender').value;
+  const body = document.getElementById('suBody').value;
+  const style = document.getElementById('suStyle').value;
+  const avoid = document.getElementById('suAvoid').value.trim();
+  if (!name||!email||!pw) { showToast('이름, 이메일, 비밀번호는 필수입니다'); return; }
+  if (pw.length<8) { showToast('비밀번호는 8자 이상이어야 합니다'); return; }
+  const users = JSON.parse(localStorage.getItem('ss_users')||'{}');
+  if (users[email]) { showToast('이미 가입된 이메일입니다'); return; }
+  const user = {name,email,pw,height,weight,gender,body,style,avoid};
+  users[email] = user;
+  localStorage.setItem('ss_users',JSON.stringify(users));
+  localStorage.setItem('ss_current',email);
+  currentUser = user;
+  updateNavForUser(user);
+  if (gender) document.getElementById('genderSelect').value = gender;
+  closeModal('signup');
+  showToast(`가입 완료! ${name}님의 맞춤 코디를 추천해드릴게요 ✨`);
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('ss_current');
+  document.getElementById('userBadge').classList.remove('show');
+  document.getElementById('loginBtn').style.display='';
+  document.getElementById('signupNavBtn').style.display='';
+  document.getElementById('logoutBtn').style.display='none';
+  showToast('로그아웃되었습니다');
+}
+
+function updateNavForUser(user) {
+  document.getElementById('avatarInitial').textContent = user.name[0];
+  document.getElementById('userNameDisplay').textContent = user.name;
+  document.getElementById('userBadge').classList.add('show');
+  document.getElementById('loginBtn').style.display='none';
+  document.getElementById('signupNavBtn').style.display='none';
+  document.getElementById('logoutBtn').style.display='';
+}
+
+function restoreSession() {
+  const email = localStorage.getItem('ss_current');
+  if (!email) return;
+  const users = JSON.parse(localStorage.getItem('ss_users')||'{}');
+  if (users[email]) {
+    currentUser = users[email];
+    updateNavForUser(users[email]);
+    if (users[email].gender) document.getElementById('genderSelect').value = users[email].gender;
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+['loginModal','signupModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target.id===id) closeModal(id.replace('Modal',''));
+  });
+});
+
+function scrollToApp() { document.getElementById('app-section').scrollIntoView({behavior:'smooth'}); }
+
+restoreSession();
+initWeather();
+</script>
+</body>
+</html>
